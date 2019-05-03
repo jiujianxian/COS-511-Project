@@ -1,0 +1,145 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref,indentfirst,amstext,amsmath,amssymb,amsthm,esint}
+
+\usepackage[hyperref=true,backref=true,sorting=none]{biblatex}
+\hypersetup{colorlinks=true,linkcolor=red,citecolor=red,urlcolor=blue}
+\addbibresource{main.bib}
+\renewcommand*{\bibfont}{\small}
+
+\let\Pr\relax
+\DeclareMathOperator*{\Pr}{\mathbb{P}}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+
+\parindent 0.3in
+\title{Multi-Armed Bandit Learning}
+\author{James Heppenstall, Haochen Li, Alberto Mizrahi}
+\date{7 May 2019}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+In this project, we focus on two fundamental formalizations of the multi-armed bandit problem: \textbf{stochastic iid rewards} and \textbf{adversarial rewards}. For the former, we survey epsilon strategies, upper confidence bound (UCB) strategies, and Thompson sampling. For the latter, we survey the Exp3 family of algorithms \cite{ThomsonTutorial}. In particular, we experimentally verify their pseudo-regret bounds and compare their performance on real-world data, specifically that of the stock market over the past ten years. We finally try to motivate the problem in the broader context of Princeton's Theoretical Machine Learning (COS 511) course.
+
+At a high level, the multi-armed bandit problem is a sequential decision problem concerned with how one dynamically allocates a resource among a set of actions to maximize some cumulative reward. While the original motivation for this problem came from clinical trials \cite{thompson}, the term ``multi-armed bandit" actually traces back to slot machines, each colloquially referred to as a ``one-armed bandit", by virtue of the arm one pulls down and the fact that they often empty gamblers' pockets much like a bandit would. It should be no surprise that Gittins' canonical example therefore considers a gambler who must decide which arm to pull among $K$ non-identical slot machines to maximize his cumulative return \cite{gittins}.
+
+The multi-armed bandit learning problem has received much attention, particularly in the reinforcement learning community, because it touches upon the intrinsic tradeoff between \textbf{exploration} and \textbf{exploitation} in sequential experiments\footnote{We will show that the problem can be thought of as a simple version of online reinforcement learning.} \cite{bubeck}. In the context of Gittens' slot machines, should one \textit{explore} slot machines with unknown rewards or \textit{exploit} the slot machine believed to give the highest reward? Every algorithm we survey approaches this fundamental question in a different manner, yielding varying theoretical guarantees and empirical results.
+
+\section{Theoretical Background}
+
+\subsection{Notation and Terminology}
+
+We adopt Bubeck and Cesa-Bianchi's \cite{bubeck} notation and terminology to formulate the multi-armed bandit problem. Let the agent implementing some strategy be the player. Assume there are $K\geq 2$ arms and $T\geq K$ rounds, both \textit{known} to the player. Each arm $i=1,...,K$ is associated with a sequence $X_{i,1},...,X_{i,T}$ of \textit{unknown} rewards. Every round $t=1,...,T$, the player uses their strategy to select arm $I_{t}$ and receives the corresponding reward $X_{I_{t},t}$. The goal is to maximize the cumulative reward $\sum_{t=1}^{T}X_{I_{t},t}$.
+
+In the stochastic iid reward setting, each arm $i$ is associated with a probability distribution $\nu_{1},...,\nu_{K}$ that remains identical throughout. Every round $t$, the reward $X_{I_{t},t}\sim\nu_{I_{t}}$ is drawn independently of past player actions. In the adversarial reward setting, an adversary defines gain vector $g_{t}=(g_{1,t},...,g_{K,t})$ at the \textit{beginning} of every round $t$. The player then selects arm $I_{t}$ and receives the reward $X_{I_{t},t}=g_{I_{t},t}$ without observing the gains of the other arms. Note that stochastic iid rewards are a subset of adversarial rewards where each gain vector is defined according to draws from $\nu_{1},...,\nu_{K}$.
+
+It is trivial that our formulation of the problem mimics the online learning problems we studied in COS 511, such as the perceptron algorithm \cite{lecture16} and the Widrow-Hoff algorithm \cite{lecture18}. It is therefore natural to think about the theoretical guarantees of any bandit strategy in terms of \textbf{regret}; that is, its performance with respect to the optimal strategy. The regret after $T$ rounds is defined as
+\begin{align}
+R_{T}=\max_{i=1,...,K}\sum_{t=1}^{T}X_{i,t}-\sum_{t=1}^{T}X_{I_{t},t}.
+\end{align}
+In reality, the rewards and the player's choices could be stochastic, which allows us to introduce two further notions of regret: expected regret and pseudo-regret, which are defined as
+\begin{gather}
+\E[R_{n}]=\E\Bigg{[}\max_{i=1,...,K}\sum_{t=1}^{n}X_{i,t}-\sum_{t=1}^{n}X_{I_{t},t}\Bigg{]} \\
+\bar{R}_{n}=\max_{i=1,...,K}\E\Bigg{[}\sum_{t=1}^{n}X_{i,t}-\sum_{t=1}^{n}X_{I_{t},t}\Bigg{]}
+\end{gather}
+In both cases, expectation is with respect to the random draws of both rewards and player actions. It is trivial that $\hat{R}_{n}\leq\E[R_{n}]$. In this survey, we will mostly provide bounds with respect to the pseudo-regret.
+
+Before we describe the algorithms to be surveyed, we cite a trivial lower bound on the pseudo-regret, and hence the expected regret.
+\begin{align}
+\inf\sup\Bigg{(}\max_{i=1,...,K}\E\sum_{i=1}^{n}Y_{i,t}-\E\sum_{i=1}^{n}Y_{I_{t},t}\Bigg{)}\geq\frac{1}{20}\sqrt{nK}
+\end{align}
+Since $\max_{i=1,...,K}\E\sum_{i=1}^{n}Y_{i,t}-\E\sum_{i=1}^{n}Y_{I_{t},t}=\hat{R}_{n}\leq\E[R_{n}]$, we get our lower bound. 
+
+\subsection{Epsilon Strategies}
+
+https://cs.nyu.edu/~mohri/pub/bandit.pdf
+
+At the heart of the bandit problem is achieving a balance between exploitation and exploration. A simple approach to this is to design algorithms that behave greedily (i.e. pull the "best" arm where, "best" is dependent on previous observations) except at certain times where the algorithm performs some exploration by randomly pulling one of the levers. These type of strategies are known as \textbf{semi-uniform strategies}. How much exploitation is done versus exploration is usually determined by a hyperparameter, commonly denoted $\epsilon$.
+
+
+One example of such a strategy is the $\epsilon$-\textbf{greedy} strategy \cite{Sutton:1998:IRL:551283}. In it, a lever is selected uniformly at random with probability $\epsilon$. On the other hand, the best lever seen so far is selected with probability $1-\epsilon$. 
+
+Another $\epsilon$ strategy is $\epsilon$-\textbf{first}. Instead of randomly selecting between exploration and exploitation as in $\epsilon$-\textbf{greedy}, it does the former exclusively first and then the latter exclusively. In particular, if the algorithm will be run for $T$ rounds, the algorithm will explore for $\epsilon T$ rounds (i.e. select a lever uniformly at random) and then conduct exploitation for the rest of the $(1-\epsilon)T$ rounds. This motivation of this strategy is based on the idea that after many exploration rounds, the algorithm should have an approximate idea of which lever is the best. Assuming that this approximation is accurate, it means that the algorithm has found a good lever and hence, it makes sense to then exploit for the rest of the remaining rounds.
+
+An extension of the $\epsilon$-\textbf{greedy} strategy, which is also based off of the idea of exploring more at the beginning rounds and then exploiting more in the latter rounds, is known as $\epsilon$-\textbf{decreasing}. It is basically the same as $\epsilon$-\textbf{greedy} except that $\epsilon$ is manually decreased as the rounds go on. Intuitively, this means that initially, when $\epsilon$ is (relatively) high, the algorithm will attempt more exploration but as the round goes on (and presumably, a good knowledge of the levers' is known), the algorithm will proceed to do more and more exploitation. Finally, there are various ways of manually decreasing $\epsilon$. For the purposes of this paper, we selected the simple scheme were after, $T/N$ rounds (where $N$ is some hyperparameter), $\epsilon$ is decreased by some factor of $\delta \in (0,1)$.
+
+Finally, there exists a more "sophisticated" version of $\epsilon$-\textbf{decreasing}, known as Adaptive $\epsilon$-greedy strategy based on value difference (or \textbf{VDBE}), which decreases $\epsilon$ based on how well the algorithm has learned the levers' distributions, as opposed to manually tuning it \cite{Tokic:2010:A9E:1882150.1882177}. In particular, let $Q(t, a)$ be the expected reward of pulling lever $a$ at round $t$. This value is usually calculated as the average of rewards from that lever observed so far. Suppose lever $a_t$ is selected at round $t$ and some reward $r_t$ is observed. We can update the expected reward for that lever using the formula
+\begin{equation*}
+    Q(t+1, a_t) = Q(t,a_t) + \alpha_t [r_{t} - Q(t, a_t)].
+\end{equation*}
+where $\alpha_t \in (0, 1]$ is a positive step-size. The term $r_{t} - Q(t, a)$ is known as the temporal-difference error (TD-error) and indicates the direction (up or down) to which the expected reward must be modified.
+
+Let $\epsilon(t)$ be $\epsilon$ parameter at round $t$.  The idea behind $\textbf{VDBE}$ is to control $\epsilon$ using the TD-error. Intuivetely, if the TD-error is large that means that our knowledge of the expected reward is not very accurate, which calls for more exploration. The opposite is also true: as the algorithm's knowledge of the expected rewards of the levers converge to their true values, the TD-errors will be smaller which calls for more exploitation. The way this is achieved is by modeling this behavior using the (softmax) Boltzmann distribution
+\begin{equation*}
+    f(t, a, \sigma)
+    = \frac{1 - \exp(\frac{-|Q(t+1, a) - Q(t,a)|}{\sigma} )}{1 + \exp(\frac{-|Q(t+1, a) - Q(t,a)|}{\sigma} )} 
+    = \frac{1 - \exp(\frac{-|\alpha_t \cdot TD-error|}{\sigma} )}{1 + \exp(\frac{-|\alpha_t \cdot TD-error|}{\sigma} )}
+\end{equation*}
+where $\sigma > 0$ is a parameter known as the inverse sensitivity. Using this, we update
+\begin{equation*}
+    \epsilon(t+1) = \delta \cdot f(t, a_t, \sigma) + (1-\delta) \epsilon(t),
+\end{equation*}
+where $\delta \in [0,1)$ is a parameter that determines how much influence the current TD-error has in modifying $\epsilon$. 
+
+\subsection{Upper Confidence Bound (UCB) Strategies}
+
+In this section, we will consider a basic version of upper confidence bound algorithm\cite{UCB}. This family of algorithms assumes \textbf{stochastic i.i.d. rewards}. This family of algorithms operates on the principle of optimism in the face of uncertainty. That is, despite our lack of knowledge about the distribution of rewards of different arms, we will construct a guess with respect to the expected reward of each arm and optimistically believe that our guess is close to the true expected rewards. We will then pick the arm with the highest expected reward. If it turns out that the arm we pick has a very low reward, we will decrease the estimated reward of the arm we picked.
+
+More formally, in this algorithm, we play each of the $K$ actions once, giving initial estimates for expected reward $\bar{x_i}$ of each action $i$. Let $t$ denote the $t$-th round. Let $n_j$ represent the number of times action $j$ has been player so far, we will play action $j$ that maximizes $\bar{x_j} + \sqrt{2log\frac{t}{n_j}}$. Let $j_{max}$ denote the action we just picked, we observe the actual reward of action $j_{max}$ at round $t$ and update the estimated expected reward for arm $j_{max}$.
+
+$\bar{x_j} + \sqrt{2log\frac{t}{n_j}}$ is an upper confidence bound for the true expected reward for aaction $j$. $\sqrt{2log\frac{t}{n_j}}$ seems like a mysterious quantity, it can in fact be derived using the Hoeffding’s Inequality we covered in class. Let $Y_1,Y_2,...,Y_{n_j}$ be the rewards yielded by action $i$ after we choose action $i$ $n_j$ times, and we can make the rewards to be between $0$ and $1$. By our \textbf{stochastic i.i.d. rewards} assumption,  $Y_1,Y_2,...,Y_{n_j}$ are i.i.d. Let $Y = \frac{1}{n_j}\sum_{i = 1}^{n_j}Y_i$, $\mu = E[Y_1]$. By the Hoeffding’s Inequality:
+
+\begin{equation} 
+	\begin{split}
+	    & Pr[Y \geq \mu + a] \leq e^{-2a^2 n_j} \\
+		& Pr[Y + a \leq \mu ] \leq e^{-2a^2 n_j}
+	\end{split}
+\end{equation}
+
+We can solve for $a$ to find an upper bound of the true expected mean $\mu$. That is, We want  Y to be less than or equal to $\mu + a$ with high probability. If we set $a = \sqrt{2log\frac{t}{n_j}}$, we will get $Pr[Y \geq \mu + a] \leq t^{-4}$, which converges to $0$ very quickly as the number of rounds played increases. 
+
+We will state a theorem about the pseudo-regret bound of UCB algorithm without proof: suppose that the UCB algorithm is run on a multi-armed bandit problem with $K$ actions, and the rewards for each action lie in $[0,1]$, then its pseudo-regret after $T$ rounds is at most $O(\sqrt{KTlogT})$.
+
+\subsection{Thompson Sampling}
+
+Thompson sampling was first proposed in 1933\cite{thompson}. It is yet another method to solve the multi-armed bandit problem. The treatment of Thompson sampling in this project is inspired by \cite{ThomsonTutorial}. Thompson sampling differs fundamentally from the UCB algorithms because it is Bayesian, while the UCB algorithms take a frequentist's approach. We will present a special version of Thompson Sampling here, the Beta-Bernoulli Bandit problem. There $K$ actions, an action $i$ produces a reward of $1$ with a probability of $\theta_k$ and a reward of $0$ with a probability of $1-\theta_k$. Note that each $\theta_k$ can be interpreted as the agent's mean reward. The true mean rewards $\theta = (\theta_1, ..., \theta_K)$ is unknown, but they remain fixed over time. In the first round, the player chooses an action $x_1$ and a reward $r_1 \in \{0,1\}$ is generated with success probability $P(r_1 = 1 |x_1, \theta) = \theta_{x_1}$. After observing $r_1$, the player updates the priors and chooses another action $x_2$ and observes another reward $r_2$ and the process continues. 
+
+Let the agent starts with an independent prior belief over each $\theta_k$. Take these priors to be beta-distributed  with parameters $\alpha = (\alpha_1, ..., \alpha_K)$ and $\beta = (\beta_1, ..., \beta_K)$. During the first round, we will take $\alpha_i = \beta_i = 1$ $\forall i$ such that $1 \leq i \leq K$. As observations are gathered, the distribution is updated according to Bayes' rule. It is particularly convenient to work with the beta distribution because it has a very simple update formula using Bayes' rule. 
+
+\begin{equation}
+ 	(\alpha_K, \beta_K) \leftarrow
+    \begin{cases}
+      (\alpha_K, \beta_K), & \text{if}\ x_t \neq k \\
+      (\alpha_K, \beta_K) + (r_t,1-r_t), & \text{if}\ x_t = k
+    \end{cases}
+ \end{equation}
+ 
+ Note that Thomson Sampling is essentially using Bayesian Inference to compute posterior with the known prior and the likelihood of the sampled data. Although Thomson Sampling is fundamentally different from UCB algorithms, this paper\cite{ThomsonSamplingRegret} shows that in a $K$-armed bandit problem, the pseudo-regret of Thomson Sampling after $T$ rounds is also at most $O(\sqrt{KTlogT})$.
+
+\subsection{Exp3 Family of Algorithms}
+
+Every algorithm outlined thus far has assumed \textbf{stochastic i.i.d. rewards}. (made assumptions about the nature of the process generating the sequence of unknown rewards $X_{i,1},X_{i,2},...$ associated with each arm $i=1,...,K$. More specifically, each algorithm assumes at round $t$ that reward $X_{i,t}\sim\nu_{I_{t}}$ independently (and identically as each distribution only depends on the arm); in other words, we assume \textbf{stochastic i.i.d. rewards}. This assumption has been at the core of the multi-armed bandit learning problem since the original formalization of Robbins \cite{robbins} and the seminal paper of Lai and Robbins \cite{lai}.
+
+Auer et al. \cite{ThomsonTutorial} (shoutout Shapire :)), however, adopt a game-theoretic approach that makes no assumptions about the nature of the process generating the payoffs. The result of this analysis is the Exp3 algorithm. This algorithm selects arm $i$ in round $t$ with probability
+\begin{align*}
+p_{i}(t)=(1-\gamma)\frac{w_{i}(t)}{\sum_{j=1}^{K}w_{j}(t)}+\frac{\gamma}{K}
+\end{align*}
+for $i=1,...,K$. Note that $\gamma\in(0,1]$ is a mixing parameter where $\boldsymbol{p}(t)$ is the uniform distribution if $\gamma=1$. *Relate to exponential algorithms covered in class (i.e. hedge)*. The Exp3 algorithm is an online learning algorithm with pseudo-regret $\bar{R}_{n}\leq2\sqrt{nK\ln K}$ if $\gamma=\sqrt{\frac{\ln K}{tK}}$ \cite{bubeck}. 
+
+As is the case when it comes to many algorithms of this form, randomization can be used to better improve performance. The Exp3.P algorithm is such a variation and achieves small pseudo-regret with high probability. This is necessary because the variance of the regret achieved by Exp3 is large - so large that a high probability bound may not even hold. 
+
+\section{Empirical Results}
+
+\subsection{Experimental Setup}
+
+\subsection{Results}
+
+\section{Conclusion}
+
+\newpage
+\printbibliography
+
+\end{document}

@@ -3,21 +3,17 @@ import pandas as pd
 import numpy as np
 import math
 
-def calc_daily_stock_changes(stocks, tickers, day):
-    stock_changes = []
+def calc_rewards_arms(bernoulli_params):
+    arms_rewards = []
+    for p in bernoulli_params:
+        rand = np.random.random()
+        reward = 1 if rand < p else 0
+        arms_rewards.append(reward)
 
-    for ticker in tickers:
-        open_price = stocks["{0}-open".format(ticker)][day]
-        close_price = stocks["{0}-close".format(ticker)][day]
-        net_change = close_price - open_price
+    return arms_rewards
 
-        stock_changes.append(net_change)
-
-    return stock_changes
-
-
-def epsilon_greedy(stocks, tickers, num_rounds, epsilon, rounds_until_decrease, decreasing_factor):
-    num_arms = len(tickers)
+def epsilon_greedy(bernoulli_params, num_rounds, epsilon, rounds_until_decrease, decreasing_factor):
+    num_arms = len(bernoulli_params)
     times_arm_selected = np.zeros((num_arms,))
     arms_avg_reward = np.zeros((num_arms,))
 
@@ -29,7 +25,7 @@ def epsilon_greedy(stocks, tickers, num_rounds, epsilon, rounds_until_decrease, 
         rand = random.uniform(0, 1)
 
         # Calculate the reward for all the arms
-        arms_rewards = calc_daily_stock_changes(stocks, tickers, t)
+        arms_rewards = calc_rewards_arms(bernoulli_params)
         # Get possible reward in round
         best_possible_round_reward = max(arms_rewards)
 
@@ -48,9 +44,9 @@ def epsilon_greedy(stocks, tickers, num_rounds, epsilon, rounds_until_decrease, 
         yield round_reward, best_possible_round_reward
 
 
-def epsilon_first(stocks, tickers, num_rounds, epsilon):
+def epsilon_first(bernoulli_params, num_rounds, epsilon):
     num_explorative_rounds = math.ceil(epsilon * num_rounds)
-    num_arms = len(tickers)
+    num_arms = len(bernoulli_params)
     times_arm_selected = np.zeros((num_arms,))
     arms_avg_reward = np.zeros((num_arms,))
 
@@ -58,7 +54,7 @@ def epsilon_first(stocks, tickers, num_rounds, epsilon):
         rand = random.uniform(0, 1)
 
         # Calculate the reward for all the arms
-        arms_rewards = calc_daily_stock_changes(stocks, tickers, t)
+        arms_rewards = calc_rewards_arms(bernoulli_params)
         # Get possible reward in round
         best_possible_round_reward = max(arms_rewards)
 
@@ -78,16 +74,16 @@ def epsilon_first(stocks, tickers, num_rounds, epsilon):
         yield round_reward, best_possible_round_reward
 
 
-def VDBE_epsilon_greedy(stocks, tickers, num_rounds, delta, inverse_sensitivity):
+def VDBE_epsilon_greedy(bernoulli_params, num_rounds, delta, inverse_sensitivity):
     epsilon = 1
-    num_arms = len(tickers)
+    num_arms = len(bernoulli_params)
     times_arm_selected = np.zeros((num_arms,))
     arms_avg_reward = np.zeros((num_arms,))
 
     # Calculate the reward for all the arms
-    arms_rewards = calc_daily_stock_changes(stocks, tickers, 0)
+    arms_rewards = calc_rewards_arms(bernoulli_params)
 
-    for t in range(num_rounds):
+    for t in range(num_rounds-1):
         rand = random.uniform(0, 1)
 
         # Get possible reward in round
@@ -107,7 +103,7 @@ def VDBE_epsilon_greedy(stocks, tickers, num_rounds, delta, inverse_sensitivity)
         arms_avg_reward[chosen_arm_idx] += step_size * (round_reward - arms_avg_reward[chosen_arm_idx])
 
         # Calculate the reward for all the arms
-        next_arms_rewards = calc_daily_stock_changes(stocks, tickers, t+1)
+        next_arms_rewards = calc_rewards_arms(bernoulli_params)
 
         temporal_diff_err = next_arms_rewards[chosen_arm_idx] - round_reward
         power = - abs(step_size * temporal_diff_err) / inverse_sensitivity
@@ -119,19 +115,19 @@ def VDBE_epsilon_greedy(stocks, tickers, num_rounds, delta, inverse_sensitivity)
 
         yield round_reward, best_possible_round_reward
 
-if __name__ == "__main__":
-    stocks = pd.read_csv("stocks/random_stocks.csv")
-    tickers = sorted(set([key.split("-")[0] for key in stocks.keys()[1:]]))
 
+if __name__ == "__main__":
     EPSILON = 0.3
-    ROUNDS = 2500
+    ROUNDS = 10000
+
+    bernoulli_params = np.linspace(0.1, 0.9, 20)
 
     print("------ Epsilon Greedy --------")
     round = 1
     cum_regret = 0
     cumulative_rewards = []
     best_possible_cumulative_rewards = []
-    for round_reward, best_possible_round_reward in epsilon_greedy(stocks, tickers, ROUNDS, EPSILON, ROUNDS, 1):
+    for round_reward, best_possible_round_reward in epsilon_greedy(bernoulli_params, ROUNDS, EPSILON, ROUNDS, 1):
         cumulative_rewards.append(round_reward)
         best_possible_cumulative_rewards.append(best_possible_round_reward)
 
@@ -139,9 +135,11 @@ if __name__ == "__main__":
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
@@ -155,7 +153,7 @@ if __name__ == "__main__":
     cum_regret = 0
     cumulative_rewards = []
     best_possible_cumulative_rewards = []
-    for round_reward, best_possible_round_reward in epsilon_first(stocks, tickers, ROUNDS, EPSILON):
+    for round_reward, best_possible_round_reward in epsilon_first(bernoulli_params, ROUNDS, EPSILON):
         cumulative_rewards.append(round_reward)
         best_possible_cumulative_rewards.append(best_possible_round_reward)
 
@@ -163,9 +161,11 @@ if __name__ == "__main__":
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     cum_regret = 0
     cumulative_rewards = []
     best_possible_cumulative_rewards = []
-    for round_reward, best_possible_round_reward in epsilon_greedy(stocks, tickers, ROUNDS, EPSILON, ROUND_PER_DECREASE, DECREASE_FACTOR):
+    for round_reward, best_possible_round_reward in epsilon_greedy(bernoulli_params, ROUNDS, EPSILON, ROUND_PER_DECREASE, DECREASE_FACTOR):
         cumulative_rewards.append(round_reward)
         best_possible_cumulative_rewards.append(best_possible_round_reward)
 
@@ -189,9 +189,11 @@ if __name__ == "__main__":
         # print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
@@ -201,13 +203,13 @@ if __name__ == "__main__":
     print()
 
     print("------ VDBE Epsilon Greedy --------")
-    DELTA = 1 / len(tickers)
+    DELTA = 1 / len(bernoulli_params)
     INVERSE_SENSITIVITY = 1.5
     round = 1
     cum_regret = 0
     cumulative_rewards = []
     best_possible_cumulative_rewards = []
-    for round_reward, best_possible_round_reward in VDBE_epsilon_greedy(stocks, tickers, ROUNDS, DELTA, INVERSE_SENSITIVITY):
+    for round_reward, best_possible_round_reward in VDBE_epsilon_greedy(bernoulli_params, ROUNDS, DELTA, INVERSE_SENSITIVITY):
         cumulative_rewards.append(round_reward)
         best_possible_cumulative_rewards.append(best_possible_round_reward)
 
@@ -215,9 +217,11 @@ if __name__ == "__main__":
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
