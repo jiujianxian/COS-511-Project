@@ -3,15 +3,31 @@ import pandas as pd
 import numpy as np
 import math
 
-def calc_daily_stock_changes(stocks, tickers, day):
+
+
+def single_day_reward(stocktable, name, day, amountToInvest=1.0):
+    if name == "brk":
+        name = "brk-a"
+    openPrice = stocktable[name + "-open"][day]
+    closePrice = stocktable[name + "-close"][day]
+    sharesBought = amountToInvest / openPrice
+    amountAfterSale = sharesBought * closePrice
+
+    return amountAfterSale - amountToInvest
+
+def calc_daily_stock_changes(stocks, tickers, day, amountToInvest=1.0):
     stock_changes = []
 
     for ticker in tickers:
         open_price = stocks["{0}-open".format(ticker)][day]
         close_price = stocks["{0}-close".format(ticker)][day]
-        net_change = close_price - open_price
+        shares_bought = amountToInvest / open_price
+        amount_after_sale = shares_bought * close_price
+        net_return = amount_after_sale - amountToInvest
 
-        stock_changes.append(net_change)
+        #net_return = single_day_reward(stocks, ticker, day, amountToInvest)
+
+        stock_changes.append(net_return)
 
     return stock_changes
 
@@ -87,7 +103,7 @@ def VDBE_epsilon_greedy(stocks, tickers, num_rounds, delta, inverse_sensitivity)
     # Calculate the reward for all the arms
     arms_rewards = calc_daily_stock_changes(stocks, tickers, 0)
 
-    for t in range(num_rounds):
+    for t in range(num_rounds-1):
         rand = random.uniform(0, 1)
 
         # Get possible reward in round
@@ -119,12 +135,13 @@ def VDBE_epsilon_greedy(stocks, tickers, num_rounds, delta, inverse_sensitivity)
 
         yield round_reward, best_possible_round_reward
 
+
 if __name__ == "__main__":
     stocks = pd.read_csv("stocks/random_stocks.csv")
     tickers = sorted(set([key.split("-")[0] for key in stocks.keys()[1:]]))
 
     EPSILON = 0.3
-    ROUNDS = 2500
+    ROUNDS = 2518
 
     print("------ Epsilon Greedy --------")
     round = 1
@@ -139,9 +156,11 @@ if __name__ == "__main__":
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
@@ -163,9 +182,11 @@ if __name__ == "__main__":
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
@@ -189,9 +210,11 @@ if __name__ == "__main__":
         # print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
@@ -215,9 +238,11 @@ if __name__ == "__main__":
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
     print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
     print("Payoff Variance: " + str(np.var(cumulative_rewards)))
 
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
