@@ -32,7 +32,9 @@ def exp3_P(K, T, reward_func, alpha, gamma):
             weights /= np.sum(weights)
         yield arm, reward, weights
 
-def plot_regret_vs_time(K, T, reward_func, gamma, reward_vec, optimal_arm, num_rounds):
+def plot_regret_vs_time(K, T, reward_func, reward_vec, optimal_arm, num_rounds):
+    gamma = min(1, np.sqrt(K * np.log(K) / ((np.e - 1) * T)))
+    
     pseudo_regret_vec = []
     for r in np.arange(num_rounds):
         cumulative_reward, optimal_reward, t = 0, 0, 0
@@ -51,68 +53,105 @@ def plot_regret_vs_time(K, T, reward_func, gamma, reward_vec, optimal_arm, num_r
         h = ss.sem(temp) * ss.t.ppf((1 + 0.99) / 2, len(temp) - 1)
         min_pseudo_regret_vec.append(np.mean(temp) - h)
         max_pseudo_regret_vec.append(np.mean(temp) + h)
+    
+    print("Exp3 : {0}".format(np.mean(pseudo_regret_vec, axis=0)[-1]))
 
     pyplot.figure()
-    pyplot.plot("Pseudo-Regret of Exp3, Gamma = {0}".format(gamma))
+    pyplot.title("Pseudo-Regret of Exp3, Gamma = {0:.2f}".format(gamma))
     pyplot.plot(np.arange(T + 1), (np.e - 1) * gamma * np.arange(T + 1) + (K * np.log(K)) / gamma, "red", label="Upper Bound")
     pyplot.plot(np.arange(T + 1), (1 / 20) * np.sqrt(K * np.arange(T + 1)), "green", label="Lower Bound")    
     pyplot.plot(np.arange(T + 1), min_pseudo_regret_vec, "b--", linewidth=1.0)
     pyplot.plot(np.arange(T + 1), max_pseudo_regret_vec, "b--", linewidth=1.0)
-    pyplot.plot(np.arange(T + 1), np.mean(pseudo_regret_vec, axis=0), "blue", label="Mean")
+    pyplot.plot(np.arange(T + 1), np.mean(pseudo_regret_vec, axis=0), "blue", label="Exp3 (w/ 99% CI)")
     pyplot.xlabel("Round, $T$")
-    pyplot.ylabl("Pseudo-Regret")
+    pyplot.ylabel("Pseudo-Regret, $\\bar{R}_{n}$")
     pyplot.legend()
+    pyplot.yscale("log")
     pyplot.show()
 
-def plot_regret_vs_time_P(K, T, reward_func, alpha, gamma, reward_vec, optimal_arm):
-    cumulative_reward, optimal_reward, t = 0, 0, 0
-    pseudo_regret_vec = [0]
+def plot_regret_vs_time_P(K, T, reward_func, reward_vec, optimal_arm, num_rounds):
+    delta = 0.01
+    alpha = 2 * np.sqrt(np.log(K * T / delta))
+    gamma = min(3 / 5, 2 * np.sqrt(3 * K * np.log(K) / (5 * T)))
+    
+    pseudo_regret_vec = []
+    for r in np.arange(num_rounds):
+        cumulative_reward, optimal_reward, t = 0, 0, 0
+        pseudo_regret_round_vec = [0]
+        for (arm, reward, weights) in exp3_P(K, T, reward_func, alpha, gamma):
+            cumulative_reward += reward
+            optimal_reward += reward_vec[t][optimal_arm]
+            pseudo_regret_round_vec.append(optimal_reward - cumulative_reward)
+            t += 1
+        pseudo_regret_vec.append(pseudo_regret_round_vec)
 
-    for (arm, reward, weights) in exp3_P(K, T, reward_func, alpha, gamma):
-        cumulative_reward += reward
-        optimal_reward += reward_vec[t][optimal_arm]
-        pseudo_regret_vec.append(optimal_reward - cumulative_reward)
-        t += 1
+    min_pseudo_regret_vec = [0]
+    max_pseudo_regret_vec = [0]
+    for t in np.arange(T):
+        temp = np.array([x[t] for x in pseudo_regret_vec])
+        h = ss.sem(temp) * ss.t.ppf((1 + 0.99) / 2, len(temp) - 1)
+        min_pseudo_regret_vec.append(np.mean(temp) - h)
+        max_pseudo_regret_vec.append(np.mean(temp) + h)
+
+    print("Exp3.P : {0}".format(np.mean(pseudo_regret_vec, axis=0)[-1]))
 
     pyplot.figure()
-    pyplot.plot(np.arange(T+1), pseudo_regret_vec, "blue")
-    pyplot.plot(np.arange(T+1), (np.e - 1) * gamma * np.arange(T + 1) + (K * np.log(K)) / gamma, "red")
-    pyplot.plot(np.arange(T+1), (1 / 20) * np.sqrt(K * np.arange(T+1)), "green")
+    pyplot.title("Pseudo-Regret of Exp3.P, Alpha = {0:.2f}, Gamma = {1:.2f}".format(alpha, gamma))
+    pyplot.plot(np.arange(T + 1), 4 * np.sqrt(K * np.arange(T + 1) * np.log(K * np.arange(T + 1) / delta)) + 4 * np.sqrt(5 * K * np.arange(T + 1) * np.log(K) / 3) + 8 * np.log(K * np.arange(T + 1) / delta), "red", label="Upper Bound")
+    pyplot.plot(np.arange(T + 1), (1 / 20) * np.sqrt(K * np.arange(T + 1)), "green", label="Lower Bound")    
+    pyplot.plot(np.arange(T + 1), min_pseudo_regret_vec, "b--", linewidth=1.0)
+    pyplot.plot(np.arange(T + 1), max_pseudo_regret_vec, "b--", linewidth=1.0)
+    pyplot.plot(np.arange(T + 1), np.mean(pseudo_regret_vec, axis=0), "blue", label="Exp3.P (w/ 99% CI)")
+    pyplot.xlabel("Round, $T$")
+    pyplot.ylabel("Pseudo-Regret, $\\bar{R}_{n}$")
+    pyplot.legend()
+    pyplot.yscale("log")
     pyplot.show()
+
+def plot_regret_vs_gamma(K, T, reward_func, reward_vec, optimal_arm, num_rounds):
+    gamma_vec = np.arange(0.01, 1.01, 0.01)
+    
+    pseudo_regret_vec = []
+    for gamma in gamma_vec:
+        pseudo_regret_round_vec = []
+        for r in np.arange(num_rounds):
+            cumulative_reward, optimal_reward, t = 0, 0, 0
+            for (arm, reward, weights) in exp3(K, T, reward_func, gamma):
+                cumulative_reward += reward
+                optimal_reward += reward_vec[t][optimal_arm]
+                t += 1
+            pseudo_regret_round_vec.append(optimal_reward - cumulative_reward)
+        pseudo_regret_vec.append(pseudo_regret_round_vec)
+        print("{0:.2f} : {1}".format(gamma, np.mean(pseudo_regret_round_vec)))
+
+    min_pseudo_regret_vec = []
+    max_pseudo_regret_vec = []
+    for i, _ in enumerate(gamma_vec):
+        temp = np.array([x for x in pseudo_regret_vec[i]])
+        h = ss.sem(temp) * ss.t.ppf((1 + 0.99) / 2, len(temp) - 1)
+        min_pseudo_regret_vec.append(np.mean(temp) - h)
+        max_pseudo_regret_vec.append(np.mean(temp) + h)
+    
+    pyplot.figure()
+    pyplot.title("Pseudo-Regret of Exp3 vs Gamma")
+    pyplot.plot(gamma_vec, np.mean(pseudo_regret_vec, axis=1), "blue", label="Exp3 (w/ 99% CI)")
+    pyplot.plot(gamma_vec, min_pseudo_regret_vec, "b--", linewidth=1.0)
+    pyplot.plot(gamma_vec, max_pseudo_regret_vec, "b--", linewidth=1.0)
+    pyplot.xlabel("Gamma, $\\gamma$")
+    pyplot.ylabel("Pseudo-Regret, $\\bar{R}_{n}$")
+    pyplot.legend()
+    pyplot.show()    
 
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
 
-    gamma = 0.07
-    alpha = 8.2
-    gamma_vec = np.arange(0.05, 0.15, 0.01)
     p_vec = np.linspace(0.1, 0.9, num=20)
-    K, T, num_rounds = len(p_vec), 1000, 10
+    K, T, num_rounds = len(p_vec), 10000, 100
 
     reward_vec = [[np.random.binomial(1, p) for p in p_vec] for _ in range(T)] 
     reward_func = lambda t, arm: reward_vec[t][arm]
     optimal_arm = max(range(K), key=lambda arm: sum([reward_vec[t][arm] for t in range(T)]))
 
-    plot_regret_vs_time(K, T, reward_func, gamma, reward_vec, optimal_arm, num_rounds)
-    #plot_regret_vs_time_P(K, T, reward_func, alpha, gamma, reward_vec, optimal_arm)
-    """
-    pseudo_regret_vec = []
-
-    for gamma in gamma_vec:
-        pseudo_regret_round_vec = []
-        for r in np.arange(num_rounds):
-            best_reward, cumulative_reward, t = 0, 0, 0
-            for (arm, reward, weights) in exp3(K, T, reward_func, gamma):
-                best_reward += reward_vec[t][optimal_arm]
-                cumulative_reward += reward
-                t += 1
-            pseudo_regret_round_vec.append(best_reward - cumulative_reward)
-        pseudo_regret_vec.append(pseudo_regret_round_vec)
-        print("{0:.2f} : {1}".format(gamma, pseudo_regret_round_vec))
-
-    pseudo_regret_vec = np.mean(pseudo_regret_vec, axis=1)
-
-    pyplot.figure()
-    pyplot.plot(gamma_vec, np.array(pseudo_regret_vec))
-    pyplot.show()    
-    """
+    plot_regret_vs_time(K, T, reward_func, reward_vec, optimal_arm, num_rounds)
+    plot_regret_vs_time_P(K, T, reward_func, reward_vec, optimal_arm, num_rounds)
+    plot_regret_vs_gamma(K, T, reward_func, reward_vec, optimal_arm, num_rounds)
