@@ -1,4 +1,45 @@
-@article{bubeck,
+@article{robbins1952,
+author = "Robbins, Herbert",
+fjournal = "Bulletin of the American Mathematical Society",
+journal = "Bull. Amer. Math. Soc.",
+month = "09",
+number = "5",
+pages = "527--535",
+publisher = "American Mathematical Society",
+title = "Some aspects of the sequential design of experiments",
+url = "https://projecteuclid.org:443/euclid.bams/1183517370",
+volume = "58",
+year = "1952"
+}
+
+@article{thompson1933,
+ISSN = {00063444},
+URL = {http://www.jstor.org/stable/2332286},
+author = {William R. Thompson},
+journal = {Biometrika},
+number = {3/4},
+pages = {285--294},
+publisher = {[Oxford University Press, Biometrika Trust]},
+title = {On the Likelihood that One Unknown Probability Exceeds Another in View of the Evidence of Two Samples},
+volume = {25},
+year = {1933}
+}
+
+@article{gittins1979,
+ISSN = {00359246},
+URL = {http://www.jstor.org/stable/2985029},
+abstract = {The paper aims to give a unified account of the central concepts in recent work on bandit processes and dynamic allocation indices; to show how these reduce some previously intractable problems to the problem of calculating such indices; and to describe how these calculations may be carried out. Applications to stochastic scheduling, sequential clinical trials and a class of search problems are discussed.},
+author = {J. C. Gittins},
+journal = {Journal of the Royal Statistical Society. Series B (Methodological)},
+number = {2},
+pages = {148--177},
+publisher = {[Royal Statistical Society, Wiley]},
+title = {Bandit Processes and Dynamic Allocation Indices},
+volume = {41},
+year = {1979}
+}
+
+@article{bubeck2012,
 url = {http://dx.doi.org/10.1561/2200000024},
 year = {2012},
 volume = {5},
@@ -11,14 +52,48 @@ pages = {1-122},
 author = {Sébastien Bubeck and Nicolò Cesa-Bianchi}
 }
 
-@book{Sutton:1998:IRL:551283,
- author = {Sutton, Richard S. and Barto, Andrew G.},
- title = {Introduction to Reinforcement Learning},
- year = {1998},
- isbn = {0262193981},
- edition = {1st},
- publisher = {MIT Press},
- address = {Cambridge, MA, USA},
+@misc{lecture16,
+title={COS 511: Lecture Notes 16}, url={https://www.cs.princeton.edu/courses/archive/spring19/cos511/scribe_notes/0403.pdf},
+publisher={Princeton University},
+author={Mong, Arnold K.},
+year={2019},
+month={Apr}
+}
+
+@misc{lecture18,
+title={COS 511: Lecture Notes 18}, url={https://www.cs.princeton.edu/courses/archive/spring19/cos511/scribe_notes/0410.pdf},
+publisher={Princeton University},
+author={Sokolova, Ksenia},
+year={2019},
+month={Apr}
+}
+
+@InProceedings{mohri2005,
+author="Vermorel, Joann{\`e}s
+and Mohri, Mehryar",
+editor="Gama, Jo{\~a}o
+and Camacho, Rui
+and Brazdil, Pavel B.
+and Jorge, Al{\'i}pio M{\'a}rio
+and Torgo, Lu{\'i}s",
+title="Multi-armed Bandit Algorithms and Empirical Evaluation",
+booktitle="Machine Learning: ECML 2005",
+year="2005",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="437--448",
+abstract="The multi-armed bandit problem for a gambler is to decide which arm of a K-slot machine to pull to maximize his total reward in a series of trials. Many real-world learning and optimization problems can be modeled in this way. Several strategies or algorithms have been proposed as a solution to this problem in the last two decades, but, to our knowledge, there has been no common evaluation of these algorithms.",
+isbn="978-3-540-31692-3"
+}
+
+@book{sutton1998,
+author = {Sutton, Richard S. and Barto, Andrew G.},
+title = {Introduction to Reinforcement Learning},
+year = {1998},
+isbn = {0262193981},
+edition = {1st},
+publisher = {MIT Press},
+address = {Cambridge, MA, USA},
 } 
 
 @inproceedings{Tokic:2010:A9E:1882150.1882177,
@@ -37,32 +112,9 @@ author = {Sébastien Bubeck and Nicolò Cesa-Bianchi}
  address = {Berlin, Heidelberg},
 }
 
-@article{gittins,
- ISSN = {00359246},
- URL = {http://www.jstor.org/stable/2985029},
- abstract = {The paper aims to give a unified account of the central concepts in recent work on bandit processes and dynamic allocation indices; to show how these reduce some previously intractable problems to the problem of calculating such indices; and to describe how these calculations may be carried out. Applications to stochastic scheduling, sequential clinical trials and a class of search problems are discussed.},
- author = {J. C. Gittins},
- journal = {Journal of the Royal Statistical Society. Series B (Methodological)},
- number = {2},
- pages = {148--177},
- publisher = {[Royal Statistical Society, Wiley]},
- title = {Bandit Processes and Dynamic Allocation Indices},
- volume = {41},
- year = {1979}
-}
 
-@article{thompson,
- ISSN = {00063444},
- URL = {http://www.jstor.org/stable/2332286},
- author = {William R. Thompson},
- journal = {Biometrika},
- number = {3/4},
- pages = {285--294},
- publisher = {[Oxford University Press, Biometrika Trust]},
- title = {On the Likelihood that One Unknown Probability Exceeds Another in View of the Evidence of Two Samples},
- volume = {25},
- year = {1933}
-}
+
+
 
 @article{UCB,
  author = {Auer, Peter and Cesa-Bianchi, Nicol\`{o} and Fischer, Paul},
@@ -143,25 +195,6 @@ number = {1},
 pages = {1-96},
 author = {Daniel J. Russo and Benjamin Van Roy and Abbas Kazerouni and Ian Osband and Zheng Wen}
 }
-
-@InProceedings{mohri,
-author="Vermorel, Joann{\`e}s
-and Mohri, Mehryar",
-editor="Gama, Jo{\~a}o
-and Camacho, Rui
-and Brazdil, Pavel B.
-and Jorge, Al{\'i}pio M{\'a}rio
-and Torgo, Lu{\'i}s",
-title="Multi-armed Bandit Algorithms and Empirical Evaluation",
-booktitle="Machine Learning: ECML 2005",
-year="2005",
-publisher="Springer Berlin Heidelberg",
-address="Berlin, Heidelberg",
-pages="437--448",
-abstract="The multi-armed bandit problem for a gambler is to decide which arm of a K-slot machine to pull to maximize his total reward in a series of trials. Many real-world learning and optimization problems can be modeled in this way. Several strategies or algorithms have been proposed as a solution to this problem in the last two decades, but, to our knowledge, there has been no common evaluation of these algorithms.",
-isbn="978-3-540-31692-3"
-}
-
 @article{ThomsonSamplingRegret,
   author    = {Shipra Agrawal and
                Navin Goyal},
@@ -177,6 +210,17 @@ isbn="978-3-540-31692-3"
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 
-@misc{lecture16, title={COS 511: Lecture Notes 16}, url={https://www.cs.princeton.edu/courses/archive/spring19/cos511/scribe_notes/0403.pdf}, publisher={Princeton University}, author={Mong, Arnold K.}, year={2019}, month={Apr}}
-
-@misc{lecture18, title={COS 511: Lecture Notes 18}, url={https://www.cs.princeton.edu/courses/archive/spring19/cos511/scribe_notes/0410.pdf}, publisher={Princeton University}, author={Sokolova, Ksenia}, year={2019}, month={Apr}}
+@inproceedings{Even-Dar:2002:PBM:648301.755490,
+ author = {Even-Dar, Eyal and Mannor, Shie and Mansour, Yishay},
+ title = {PAC Bounds for Multi-armed Bandit and Markov Decision Processes},
+ booktitle = {Proceedings of the 15th Annual Conference on Computational Learning Theory},
+ series = {COLT '02},
+ year = {2002},
+ isbn = {3-540-43836-X},
+ pages = {255--270},
+ numpages = {16},
+ url = {http://dl.acm.org/citation.cfm?id=648301.755490},
+ acmid = {755490},
+ publisher = {Springer-Verlag},
+ address = {Berlin, Heidelberg},
+} 
