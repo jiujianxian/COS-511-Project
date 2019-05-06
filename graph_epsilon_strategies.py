@@ -161,19 +161,19 @@ if __name__ == "__main__":
     plt.show()
 
     # VDBE-epsilon
-    DELTA = 1 / K
-    INVERSE_SENSITIVITY = 1.5
-    cum_pseudo_regret = 0
-    cum_pseudo_regret_at_round = []
-
-    for round_reward, best_possible_round_reward in epsilon_strategies_bernoulli.VDBE_epsilon_greedy(bernoulli_params, ROUNDS, DELTA, INVERSE_SENSITIVITY):
-        cum_pseudo_regret += best_possible_round_reward - round_reward
-        cum_pseudo_regret_at_round.append(cum_pseudo_regret)
-
-    plt.plot(rounds_arr[:-1], cum_pseudo_regret_at_round)
-
-    plt.title('Round vs. Cumulative Regret for VDBE-epsilon')
-    plt.xlabel('Round')
-    plt.ylabel('Cumulative Regret')
-    plt.legend(loc='upper left')
-    plt.show()
+    # DELTA = 1 / K
+    # INVERSE_SENSITIVITY = 1.5
+    # cum_pseudo_regret = 0
+    # cum_pseudo_regret_at_round = []
+    #
+    # for round_reward, best_possible_round_reward in epsilon_strategies_bernoulli.VDBE_epsilon_greedy(bernoulli_params, ROUNDS, DELTA, INVERSE_SENSITIVITY):
+    #     cum_pseudo_regret += best_possible_round_reward - round_reward
+    #     cum_pseudo_regret_at_round.append(cum_pseudo_regret)
+    #
+    # plt.plot(rounds_arr[:-1], cum_pseudo_regret_at_round)
+    #
+    # plt.title('Round vs. Cumulative Regret for VDBE-epsilon')
+    # plt.xlabel('Round')
+    # plt.ylabel('Cumulative Regret')
+    # plt.legend(loc='upper left')
+    # plt.show()
