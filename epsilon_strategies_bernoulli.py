@@ -12,10 +12,24 @@ def calc_rewards_arms(bernoulli_params):
 
     return arms_rewards
 
+def precompute_rewards(bernoulli_params, num_rounds):
+    rewards = np.zeros((num_rounds, len(bernoulli_params)))
+
+    for t in range(num_rounds):
+        rewards[t, :] = calc_rewards_arms(bernoulli_params)
+
+    return rewards
+
+def find_best_avg_arm(rewards):
+    return np.argmax(rewards.mean(0))
+
 def epsilon_greedy(bernoulli_params, num_rounds, epsilon, rounds_until_decrease, decreasing_factor):
     num_arms = len(bernoulli_params)
     times_arm_selected = np.zeros((num_arms,))
     arms_avg_reward = np.zeros((num_arms,))
+
+    rewards = precompute_rewards(bernoulli_params, num_rounds)
+    best_avg_arm = find_best_avg_arm(rewards)
 
     for t in range(num_rounds):
 
@@ -25,9 +39,9 @@ def epsilon_greedy(bernoulli_params, num_rounds, epsilon, rounds_until_decrease,
         rand = random.uniform(0, 1)
 
         # Calculate the reward for all the arms
-        arms_rewards = calc_rewards_arms(bernoulli_params)
+        arms_rewards = rewards[t, :]
         # Get possible reward in round
-        best_possible_round_reward = max(arms_rewards)
+        best_round_reward = arms_rewards[best_avg_arm]
 
         chosen_arm_idx = -1
         if rand > epsilon and t > 0:      # Exploitation face
@@ -41,7 +55,7 @@ def epsilon_greedy(bernoulli_params, num_rounds, epsilon, rounds_until_decrease,
         times_arm_selected[chosen_arm_idx] += 1
         arms_avg_reward[chosen_arm_idx] += (1.0 / times_arm_selected[chosen_arm_idx]) * (round_reward - arms_avg_reward[chosen_arm_idx])
 
-        yield round_reward, best_possible_round_reward
+        yield round_reward, best_round_reward
 
 
 def epsilon_first(bernoulli_params, num_rounds, epsilon):
@@ -50,13 +64,16 @@ def epsilon_first(bernoulli_params, num_rounds, epsilon):
     times_arm_selected = np.zeros((num_arms,))
     arms_avg_reward = np.zeros((num_arms,))
 
+    rewards = precompute_rewards(bernoulli_params, num_rounds)
+    best_avg_arm = find_best_avg_arm(rewards)
+
     for t in range(num_rounds):
         rand = random.uniform(0, 1)
 
         # Calculate the reward for all the arms
-        arms_rewards = calc_rewards_arms(bernoulli_params)
+        arms_rewards = rewards[t, :]
         # Get possible reward in round
-        best_possible_round_reward = max(arms_rewards)
+        best_round_reward = arms_rewards[best_avg_arm]
 
         chosen_arm_idx = -1
         if t > num_explorative_rounds:  # Exploitation face
@@ -71,8 +88,43 @@ def epsilon_first(bernoulli_params, num_rounds, epsilon):
         arms_avg_reward[chosen_arm_idx] += (1.0 / times_arm_selected[chosen_arm_idx]) * (
                     round_reward - arms_avg_reward[chosen_arm_idx])
 
-        yield round_reward, best_possible_round_reward
+        yield round_reward, best_round_reward
 
+
+def epsilon_decreasing_auer(bernoulli_params, num_rounds, epsilon_init):
+    num_arms = len(bernoulli_params)
+    times_arm_selected = np.zeros((num_arms,))
+    arms_avg_reward = np.zeros((num_arms,))
+
+    rewards = precompute_rewards(bernoulli_params, num_rounds)
+    best_avg_arm = find_best_avg_arm(rewards)
+
+    epsilon = epsilon_init
+    for t in range(num_rounds):
+        epsilon_round = min(1, epsilon)
+
+        rand = random.uniform(0, 1)
+
+        # Calculate the reward for all the arms
+        arms_rewards = rewards[t, :]
+        # Get possible reward in round
+        best_round_reward = arms_rewards[best_avg_arm]
+
+        chosen_arm_idx = -1
+        if rand > epsilon_round and t > 0:      # Exploitation face
+            chosen_arm_idx = np.argmax(arms_avg_reward)
+        else:       # Exploration face
+            # Choose a random arm
+            chosen_arm_idx = random.randint(0, num_arms - 1)
+
+        round_reward = arms_rewards[chosen_arm_idx]
+
+        times_arm_selected[chosen_arm_idx] += 1
+        arms_avg_reward[chosen_arm_idx] += (1.0 / times_arm_selected[chosen_arm_idx]) * (round_reward - arms_avg_reward[chosen_arm_idx])
+
+        epsilon = epsilon_init/(t+1)
+
+        yield round_reward, best_round_reward
 
 def VDBE_epsilon_greedy(bernoulli_params, num_rounds, delta, inverse_sensitivity):
     epsilon = 1
@@ -124,14 +176,14 @@ if __name__ == "__main__":
 
     print("------ Epsilon Greedy --------")
     round = 1
-    cum_regret = 0
+    cum_pseudo_regret = 0
     cumulative_rewards = []
     best_possible_cumulative_rewards = []
-    for round_reward, best_possible_round_reward in epsilon_greedy(bernoulli_params, ROUNDS, EPSILON, ROUNDS, 1):
+    for round_reward, best_round_reward in epsilon_greedy(bernoulli_params, ROUNDS, EPSILON, ROUNDS, 1):
         cumulative_rewards.append(round_reward)
-        best_possible_cumulative_rewards.append(best_possible_round_reward)
+        best_possible_cumulative_rewards.append(best_round_reward)
 
-        cum_regret += best_possible_round_reward - round_reward
+        cum_pseudo_regret += best_round_reward - round_reward
         #print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
         round += 1
 
@@ -143,7 +195,7 @@ if __name__ == "__main__":
     print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
     print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
 
-    print("Cumulative regret: " + str(cum_regret))
+    print("Cumulative pseudo regret: " + str(cum_pseudo_regret))
 
     print()
     print()
@@ -182,6 +234,34 @@ if __name__ == "__main__":
     cumulative_rewards = []
     best_possible_cumulative_rewards = []
     for round_reward, best_possible_round_reward in epsilon_greedy(bernoulli_params, ROUNDS, EPSILON, ROUND_PER_DECREASE, DECREASE_FACTOR):
+        cumulative_rewards.append(round_reward)
+        best_possible_cumulative_rewards.append(best_possible_round_reward)
+
+        cum_regret += best_possible_round_reward - round_reward
+        # print("{:3d}:::Round reward: {:.3f} ---- Best possible round reward: {:.3f} ----- Cum regret: {:.3f}".format(round, round_reward, best_possible_round_reward, cum_regret))
+        round += 1
+
+    print("Total Return: " + str(np.sum(cumulative_rewards)))
+    print("Expected Payoff: " + str(np.mean(cumulative_rewards)))
+    print("Payoff Variance: " + str(np.var(cumulative_rewards)))
+
+    print("Best Total Return: " + str(np.sum(best_possible_cumulative_rewards)))
+    print("Best Possible Expected Payoff: " + str(np.mean(best_possible_cumulative_rewards)))
+    print("Best Possible Payoff Variance: " + str(np.var(best_possible_cumulative_rewards)))
+
+    print("Cumulative regret: " + str(cum_regret))
+
+    print()
+    print()
+
+
+    print("------ Epsilon Decreasing Auer --------")
+    epsilon = 200
+    round = 1
+    cum_regret = 0
+    cumulative_rewards = []
+    best_possible_cumulative_rewards = []
+    for round_reward, best_possible_round_reward in epsilon_decreasing_auer(bernoulli_params, ROUNDS, epsilon):
         cumulative_rewards.append(round_reward)
         best_possible_cumulative_rewards.append(best_possible_round_reward)
 
