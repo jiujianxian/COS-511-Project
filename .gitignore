@@ -2,4 +2,5 @@
 .pytest_cache/
 __pycache__/
 stocks/.~lock.random_stocks.csv#
-
+Proposal.pdf
+docs/
